@@ -69,7 +69,7 @@ Now you can install ChromWave:
 
 First, activate the chromwave environment (`source activate chromwave`), `cd` into the ChromWave folder and run the install command:
 ```sh
-cd GenomeNet
+cd ChromWave
 python setup.py install
 ```
 If you plan to continue developing the package and want to make local changes that are reflected in your installation, run instead
