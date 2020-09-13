@@ -13,7 +13,7 @@ If you are on Windows or a Mac, you will need to download the right Miniconda2 i
 First clone ChromWave using `git`:
 
 ```sh
-git clone https://github.com/luslab/GenomeNet.git
+git clone https://github.com/luslab/ChromWave.git
 ```
 
 If you are on linux or Mac you can use the provided miniconda install script in the `conda installation files` folder. In a terminal window `cd` into the ChromWave folder and install miniconda from the provided script by typing 
