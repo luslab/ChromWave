@@ -32,7 +32,7 @@ class FileSystem:
 
         if not isinstance(source_profile, list):
             source_profile = [source_profile]
-        self._profile_data_path = [os.path.abspath(s) for s in source_profile]
+        self._profile_data_path = [os.path.abspath(s) for s in source_profile if s is not None]
 
 
         #If test and val fractions are given we are in training mode

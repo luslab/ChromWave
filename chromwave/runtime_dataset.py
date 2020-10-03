@@ -559,7 +559,10 @@ class RuntimeDataset:
             os.makedirs(output_directory)
 
         self._load_genome_data(self._runtime_data_source)
-        return self._load_binding_profile_data(self._binding_profile_data)
+        if len(self._binding_profile_data) > 0:
+            return self._load_binding_profile_data(self._binding_profile_data)
+        else:
+            return list()
 
     def _load_data_timed(self):
         """
@@ -572,7 +575,10 @@ class RuntimeDataset:
             os.makedirs(output_directory)
 
         self._load_genome_data_timed(self._runtime_data_source)
-        return self._load_binding_profile_data_timed(self._binding_profile_data)
+        if len(self._binding_profile_data) > 0:
+            return self._load_binding_profile_data_timed(self._binding_profile_data)
+        else:
+            return list()
 
     def _load_binding_profile_data_timed(self, runtime_data_source):
         """
