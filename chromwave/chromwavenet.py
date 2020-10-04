@@ -1162,7 +1162,7 @@ class ChromWaveNet:
 
         predictions = [y.argmax(axis=2) for y in y_p]
 
-        smoothed_predictions =runtime_dataset.invert_discretizing(predictions)
+        smoothed_predictions =self.invert_discretizing(predictions)
 
         if hasattr(runtime_dataset, 'train_chr_info'):
             if chr_name in runtime_dataset.train_chr_info:
