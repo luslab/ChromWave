@@ -74,12 +74,21 @@ TF_profile2=os.path.join(data_dir,'henikoff2011','nuclei_20min_rep2_nucFree_fpm_
 nuc_profile1=os.path.join(data_dir,'henikoff2011','nuclei_20min_rep1_monoNuc_fpm_unrolled.bed')
 nuc_profile2=os.path.join(data_dir,'henikoff2011','nuclei_20min_rep2_monoNuc_fpm_unrolled.bed')
 
+pbm_dir = os.path.join(data_dir,'ScerTF','PFM')
+Nucleosome_deplacing_factor_list = ['Abf1', 'Cbf1','McM1','Rap1','Reb1','Orc1','Asg1','Azf1','Bas1','Ecm22','Ino4','Leu3','Rfx1','Rgm1','Rgt1','Rsc3','Sfp1','Stb4','Stb5','Stp1','Sum1','Sut1','Tbf1','Tbs1','Tea1','Uga3','Ume6','Urc2']
+all_dbf = os.listdir(pbm_dir)
+select_dbf = [[s  for s in all_dbf if s.__contains__(selection) or s.__contains__(str.upper(selection))] for selection in Nucleosome_deplacing_factor_list]
+select_dbf = [s[0] for s in select_dbf]
+
+n_pwm = 2 * len(select_dbf)
+
 
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
 
 nuc_model=os.path.join(model_dir,'nucleosomes/brogaard2012_nucModel_6.h5')
+dbf_directory = os.path.join(model_dir,'tf','zhu2009')
 assert os.path.exists(nuc_model),'Error: Basic nucleosome model does not exist!'
 
 run_dir = os.path.join(out_dir, '01_hyperopt')
@@ -93,18 +102,10 @@ ALGO= tpe.suggest
 MAX_EPOCHS=50
 MAX_EPOCHS_FULL = 100
 STEP_SIZE = 500
-STEP_SIZE_TRAIN = 4000
 MAX_EVALS =100
 N_TRAIN=6
-FRAGMENT_SIZE=4000
-GPU = '0'
+MINIMUM_BATCH_SIZE = 32
 
-# MAX_EPOCHS=5
-# MAX_EPOCHS_FULL = 10
-# STEP_SIZE = 4000
-# STEP_SIZE_TRAIN = 4000
-# MAX_EVALS =3
-# N_TRAIN=2
 
 u=[20,10]
 source_profiles=[TF_profile1,nuc_profile1]
@@ -113,12 +114,13 @@ f = filesystem.FileSystem(genome_dir ,run_dir,source_profile= source_profiles,ov
 
 kernel_length_choices = [6, 16, 24,32]
 pool_size_choices = [1, 2, 6, 'global']
-minimum_batch_size_choices = [8,16,32]
-conv_n_filters_choices = [16,32]
-dilation_depth_choices = [9]
+conv_n_filters_choices = [64, 82, 128, 256, 360, 480, 520]
+dilation_depth_choices = [9, 10]
 dilation_kernel_size_choices = [2,3]
-weights_min_choices = [0.,0.1]
-weights_max_choices= [0.7,0.8]
+weights_min_choices = [0.,2.0]
+weights_max_choices= [0.0,2.0]
+fragment_size_choices = [2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000]
+
 
 space = { 'optimizer': choice('optimizer', ['adam', 'rmsprop','nadam']),
           'amsgrad':choice('amsgrad',['True','False']),
@@ -126,7 +128,6 @@ space = { 'optimizer': choice('optimizer', ['adam', 'rmsprop','nadam']),
         'res_dropout' :uniform('res_dropout',0.0, 0.7),
         'res_l2' :uniform('res_l2',0.0, 0.0001),
         'final_l2' :uniform('final_l2',0.0, 0.0001),
-        'minimum_batch_size':choice('minimum_batch_size',minimum_batch_size_choices),
         'kernel_lengths' : choice('kernel_lengths',kernel_length_choices),
         'pool_sizes' : choice('pool_sizes',pool_size_choices),
         'conv_n_filters':choice('conv_n_filters',conv_n_filters_choices),
@@ -134,9 +135,11 @@ space = { 'optimizer': choice('optimizer', ['adam', 'rmsprop','nadam']),
         'dilation_kernel_size': choice('dilation_kernel_size',dilation_kernel_size_choices),
         'learning_rate': uniform('learning_rate',0.00001, 0.01),
         'reduceLR_rate' :uniform('reduceLR_rate',0.0, 0.99),
-         'weights_min' :choice('weights_min',weights_min_choices),
-         'weights_max' :choice('weights_max',weights_min_choices)
-
+        'inject_dbf_pwms': choice('inject_dbf_pwms', ['True', 'False']),
+        'use_pretrained_models': choice('use_pretrained_models', ['True', 'False']),
+    	'fragment_size': choice('fragment_size', fragment_size_choices),
+         'weights_min' :uniform('weights_min',0,2.0),
+         'weights_max' :uniform('weights_max',0,2.0)
         }
 
 
@@ -155,42 +158,46 @@ def train_genomic_wavenet_model(params):
     print("Hyper opt parameter: ")
     print(params)
 
+    cmd = '-o ' + run_dir + " " + \
+          '--genome_dir ' + genome_dir + " " + \
+          '--profiles ' + TF_profile1 + " " + nuc_profile1 + " " + \
+          '--kernel_lengths ' + str(params['kernel_lengths']) + " " + \
+          "--pool_sizes " + "global" + " " + \
+          "--learning_rate " + str(params['learning_rate']) + " " + \
+          "--dropout " + str(params['dropout']) + " " + \
+          "--res_dropout " + str(params['res_dropout']) + " " + \
+          "--res_l2 " + str(params['res_l2']) + " " + \
+          "--final_l2 " + str(params['final_l2']) + " " + \
+          "--minimum_batch_size " + str(MINIMUM_BATCH_SIZE) + " " + \
+          "--u " + str(u[0]) + " " + str(u[1]) + " " \
+                                                 "--max_epochs " + str(MAX_EPOCHS) + " " + \
+          "--step_size " + str(params['fragment_size']) + " " + \
+          "--fragment_length " + str(params['fragment_size']) + " " + \
+          "--weights_max " + str(params['weights_max']) + " " + \
+          "--weights_min " + str(params['weights_min']) + " " + \
+          "--optimizer " + params['optimizer'] + " " + \
+          "--amsgrad " + params['amsgrad'] + " " + \
+          "--early_stopping_patience " + str(int(MAX_EPOCHS / 3)) + " "
 
+    if params['use_pretrained_models'] == 'True':
+        print('Using pretrained model ' + nuc_model)
+        cmd = cmd + '--keras  ' + nuc_model + " "
 
-    cmd = '-o ' + run_dir + " "+\
-    '--genome_dir ' + genome_dir +" "+ \
-    '--profiles ' + TF_profile1 + " " +nuc_profile1 + " " + \
-    '--kernel_lengths ' + str(params['kernel_lengths']) +" "+\
-    '--keras_models '+ nuc_model +" "+ \
-    "--conv_n_filters "+ str(params['conv_n_filters']) +" "+\
-     "--pool_sizes " +  str(params['pool_sizes']) +" "+\
-     "--learning_rate "+ str(params['learning_rate']) +" "+ \
-     "--reduceLR_rate " + str(params['reduceLR_rate']) + " " + \
-     "--dropout "+ str(params['dropout']) +" "+\
-     "--res_dropout "+ str(params['res_dropout']) +" "+\
-     "--res_l2 "+ str(params['res_l2']) +" "+\
-     "--final_l2 "+ str(params['final_l2']) +" "+ \
-     "--weights_min " + str(params['weights_min']) + " " + \
-    "--weights_max " + str(params['weights_max']) + " " + \
-          "--dilation_depth " + str(params['dilation_depth']) + " " + \
-          "--dilation_kernel_size " + str(params['dilation_kernel_size']) + " " + \
-          "--minimum_batch_size "+ str(params['minimum_batch_size']) +" "+ \
-    "--u "  + str(u[0]) + " "+  str(u[1]) + " "\
-    "--max_epochs "+ str(MAX_EPOCHS) +" "+ \
-     "--step_size " + str(STEP_SIZE_TRAIN) + " " + \
-    "--fragment_length " + str(FRAGMENT_SIZE) + " " + \
-    "--optimizer " + params['optimizer'] + " " + \
-     "--amsgrad " + params['amsgrad'] + " " + \
-     "--early_stopping_patience " + str(int(MAX_EPOCHS/3))+ " " + \
-    "--which_gpu " + str(GPU) + " "
-
-
+    if params['inject_dbf_pwms'] == 'True':
+        print('Injecting PWMs ')
+        cmd = cmd + '--inject_pwm_select ' + " ".join([str(s) for s in select_dbf]) + " " + '--pwm_dir ' + pbm_dir + " "
+        cmd = cmd + "--conv_n_filters " + str(params['conv_n_filters'] + (params['conv_n_filters'] - n_pwm)) + " "
+    else:
+        cmd = cmd + "--conv_n_filters " + str(params['conv_n_filters']) + " "
     # train model loads data, trains model and stores the results of the hyperparameter search in the hyperopt_result.json file
-    os.system('python -u train_model.py ' +cmd )
-    results = utils.load_json(os.path.join(run_dir,'chromwave_output','hyperopt_result.json'))
-    model = chromwavenet.ChromWaveNet()
-    model.deserialize(os.path.join(run_dir,'chromwave_output','hyperopt_result.json'))
-    results['model'] = model
+    os.system('python -u train_model.py ' + cmd)
+    if os.path.exists(os.path.join(run_dir, 'chromwave_output', 'hyperopt_result.json')):
+        results = utils.load_json(os.path.join(run_dir, 'chromwave_output', 'hyperopt_result.json'))
+        model = chromwavenet.ChromWaveNet()
+        model.deserialize(os.path.join(run_dir, 'chromwave_output', 'hyperopt_result.json'))
+        results['model'] = model
+    else:
+        results = {'model': None, 'loss': None, 'status': None}
     return results
 
 
@@ -239,29 +246,34 @@ for i in range(no_existing_trial,N_TRAIN):
           '--profiles ' + TF_profile1 + " " + nuc_profile1 + " " + \
           '--kernel_lengths ' + str(params['kernel_lengths']) + " " + \
           '--keras_models ' + nuc_model + " " + \
-          "--conv_n_filters " + str(params['conv_n_filters']) + " " + \
-          "--pool_sizes " + str(params['pool_sizes']) + " " + \
-        "--learning_rate " + str(params['learning_rate']) + " " + \
-        "--reduceLR_rate " + str(params['reduceLR_rate']) + " " + \
+          "--pool_sizes " + "global" + " " + \
+          "--learning_rate " + str(params['learning_rate']) + " " + \
           "--dropout " + str(params['dropout']) + " " + \
           "--res_dropout " + str(params['res_dropout']) + " " + \
           "--res_l2 " + str(params['res_l2']) + " " + \
           "--final_l2 " + str(params['final_l2']) + " " + \
-          "--weights_min " + str(params['weights_min']) + " " + \
-          "--weights_max " + str(params['weights_max']) + " " + \
-          "--dilation_depth " + str(params['dilation_depth']) + " " + \
-          "--dilation_kernel_size " + str(params['dilation_kernel_size']) + " " + \
           "--u " + str(u[0]) + " " + str(u[1]) + " " \
-         "--minimum_batch_size " + str(params['minimum_batch_size']) + " " + \
+                                                 "--minimum_batch_size " + str(MINIMUM_BATCH_SIZE) + " " + \
           "--max_epochs " + str(MAX_EPOCHS_FULL) + " " + \
           "--step_size " + str(STEP_SIZE) + " " + \
-          "--fragment_length " + str(FRAGMENT_SIZE) + " " + \
-          "--early_stopping_patience " + str(int(MAX_EPOCHS/3)) + " " + \
+          "--fragment_length " + str(params['fragment_size']) + " " + \
+          "--weights_max " + str(params['weights_max']) + " " + \
+          "--weights_min " + str(params['weights_min']) + " " + \
+          "--early_stopping_patience " + str(int(MAX_EPOCHS / 3)) + " " + \
           "--optimizer " + params['optimizer'] + " " + \
-          "--amsgrad " + params['amsgrad']+ " " + \
-          "--which_gpu " + str(GPU) + " "
+          "--amsgrad " + params['amsgrad'] + " "
 
+    if params['use_pretrained_models'] == 'True':
+        print('Using pretrained model ' + nuc_model)
+        cmd = cmd + '--keras  ' + nuc_model + " "
 
+    if params['inject_dbf_pwms'] == 'True':
+        print('Injecting PWMs ')
+        cmd = cmd + '--inject_pwm_select ' + " ".join([str(s) for s in select_dbf]) + " " + '--pwm_dir ' + pbm_dir + " "
+        cmd = cmd + "--conv_n_filters " + str(params['conv_n_filters'] + (params['conv_n_filters'] - n_pwm)) + " "
+    else:
+        cmd = cmd + "--conv_n_filters " + str(params['conv_n_filters']) + " "
+    # train model loads data, trains model and stores the results of the hyperparameter search in the hyperopt_result.json file
     # train model loads data, trains model and stores the results of the hyperparameter search in the hyperopt_result.json file
     os.system('python -u train_model.py ' + cmd)
     results = utils.load_json(os.path.join(run_dir, 'Trial_' + str(i), 'chromwave_output', 'hyperopt_result.json'))
