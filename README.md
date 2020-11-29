@@ -25,7 +25,7 @@ If you are on a MacOS use the provided Mac files, eg.
 bash Miniconda3-latest-MacOSX-x86_64
 ```
 
-Once you have Miniconda2 installed, create the chromwave environment (still in the ChromWave folder)
+Once you have Miniconda3 installed, create the chromwave environment (still in the ChromWave folder)
 ```sh
 conda env create -f environment_linux.yml
 ```
