@@ -137,7 +137,7 @@ def main(args,w_array):
             os.makedirs(os.path.join(f.get_output_directory(), 'plots'))
 
         print('Plotting training history...')
-        model.plot_all_training_history(run_dataset, f)
+        model.plot_all_training_history(run_dataset, os.path.join(f.get_output_directory(), 'plots'))
 
 
     except Exception as ex:

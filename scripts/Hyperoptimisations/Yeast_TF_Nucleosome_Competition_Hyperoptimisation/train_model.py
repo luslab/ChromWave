@@ -110,12 +110,16 @@ def main(args,w_array):
 		if not os.path.exists(os.path.join(f.get_output_directory(), 'plots')):
 			os.makedirs(os.path.join(f.get_output_directory(), 'plots'))
 
-		results = {'loss': -0.5*(acc_0+acc_1)-0.5*(pcor_0+pcor_1), 'status': STATUS_OK}
 
-		utils.save_json(results, os.path.join(f.get_output_directory(), 'hyperopt_result.json'))
+        print('Plotting training history...')
+        model.plot_all_training_history(run_dataset, os.path.join(f.get_output_directory(), 'plots'))
+
+        results = {'loss': -0.5*(acc_0+acc_1)-0.5*(pcor_0+pcor_1), 'status': STATUS_OK}
+
+        utils.save_json(results, os.path.join(f.get_output_directory(), 'hyperopt_result.json'))
     #
 	except Exception as ex:
-		print("Failure to train a valid neural network for your data.")
+        print("Failure to train a valid neural network for your data.")
 		print(ex)
 
 
