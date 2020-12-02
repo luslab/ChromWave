@@ -35,10 +35,14 @@ of if you are on MacOS type
 conda env create -f environment_mac.yml
 ```
 
-Alternatively, if you have your own version of conda installed, create a new environment using python3.7 and then install all dependencies in conda: 
+Alternatively, if you have your own version of conda installed, create a new environment using python3.7and then install all dependencies in conda: 
 
 ``` sh
-
+conda create -n chromwave python=3.7
+conda activate chromwave
+```
+and install tensorflow for CPY
+``` sh
 conda install -c anaconda tensorflow 
 ```
 of if you have access to a GPU
@@ -52,7 +56,7 @@ conda install scikit-image joblib hyperas  --channel conda-forge
 ```
 followed by the pip dependencies: 
 ```sh
-pip install roman
+pip install roman pydot pydot-ng
 ```
 
 You may also consider installing the following **optional dependencies** :
