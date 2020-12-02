@@ -6,8 +6,10 @@ import keras.backend as K
 from keras import regularizers, layers
 from keras.layers.merge import Multiply, Add, Average, Concatenate
 from keras.models import Model
-from keras.optimizers import sgd, nadam, RMSprop
+from keras.optimizers import RMSprop
 from keras.optimizers import Adam as adam
+from keras.optimizers import SGD as sgd
+from keras.optimizers import Nadam as nadam
 from keras.utils import plot_model as kplot_model
 from keras import metrics as kmetrics
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger
