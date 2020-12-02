@@ -56,7 +56,7 @@ conda install scikit-image joblib hyperas  --channel conda-forge
 ```
 followed by the pip dependencies: 
 ```sh
-pip install roman
+pip install roman pydot pydot-ng
 ```
 
 You may also consider installing the following **optional dependencies** :
