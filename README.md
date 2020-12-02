@@ -35,10 +35,10 @@ of if you are on MacOS type
 conda env create -f environment_mac.yml
 ```
 
-Alternatively, if you have your own version of conda installed, create a new environment using python3.7 and then install all dependencies in conda: 
+Alternatively, if you have your own version of conda installed, create a new environment using python3.7and then install all dependencies in conda: 
 
 ``` sh
-
+conda create -n chromwave python=3.7
 conda install -c anaconda tensorflow 
 ```
 of if you have access to a GPU
