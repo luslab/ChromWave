@@ -39,7 +39,7 @@ Alternatively, if you have your own version of conda installed, create a new env
 
 ``` sh
 conda create -n chromwave python=3.7
-source activate chromwave
+conda activate chromwave
 conda install -c anaconda tensorflow 
 ```
 of if you have access to a GPU
