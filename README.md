@@ -50,7 +50,7 @@ of if you have access to a GPU
 conda install -c anaconda tensorflow-gpu
 ```
 ```sh
-conda install keras pandas --channel conda-forge
+conda install keras==2.3.1 pandas --channel conda-forge
 conda install scikit-learn matplotlib biopython pyyaml h5py --channel conda-forge
 conda install scikit-image joblib hyperas  --channel conda-forge
 ```
